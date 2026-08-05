@@ -50,6 +50,7 @@ typedef struct {
     int handle;
     char name[32];
     char addr[16];
+    char device_type_name[16];
     int is_toolbox_compatible;
     SCSI_INQUIRY inquiry_data;
     char sense_data[32];
@@ -61,4 +62,5 @@ void scsi_close(SCSI_DEVICE *target);
 int scsi_inquiry(SCSI_DEVICE *target);
 
 int extract_inquiry_data(unsigned char *raw, SCSI_DEVICE *target);
+char *device_type_to_str(int device_type);
 #endif

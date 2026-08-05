@@ -1,5 +1,30 @@
 #include "../include/scsi_device.h"
 
+/* convert device_type to string */
+#define DTYPE_MAX_LEN 16
+char *device_type_to_str(int device_type)
+{
+    char *str = NULL;
+
+    str = malloc(DTYPE_MAX_LEN);
+    if (NULL == str)
+    {
+        return NULL;
+    }
+    memset(str, 0, DTYPE_MAX_LEN);
+
+    switch (device_type)
+    {
+        case 0:
+            strcpy(str, "Disk");
+            break;
+        default:
+            strcpy(str, "Unknown");
+    }
+
+    return str;
+}
+
 #ifdef LITTLE_ENDIAN
 
 /* extract byte values to populate SCSI_DEVICE inquiry data */

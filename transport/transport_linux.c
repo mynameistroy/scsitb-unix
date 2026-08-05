@@ -54,9 +54,6 @@ void scsi_close(SCSI_DEVICE *target)
     /* close the handle to the scsi device */
     close(target->handle);
 
-    /* reset SCSI_DEVICE struct */
-    memset(target, 0, sizeof(SCSI_DEVICE));
-
     /* deallocate struct */
     free(target);
     target = NULL;
@@ -119,5 +116,12 @@ int scsi_inquiry(SCSI_DEVICE *target)
         printf("Error extracting inquiry data\n");
         return -1;
     }
+
+    /* get the string for device_type */
+    char *dtype_str = device_type_to_str(target->inquiry_data.device_type);
+    strncpy(target->device_type_name, dtype_str,
+            sizeof(target->device_type_name) - 1);
+    free(dtype_str);
+
     return 0;
 }

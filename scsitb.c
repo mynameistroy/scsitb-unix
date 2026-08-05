@@ -99,7 +99,6 @@ int cmd_info(char *device, int argc, char **argv)
     }
 
     scsi_inquiry(d);
-    char *type = "Disk";
     char *adapter = "Adaptec";
     char *emulation = "Fixed";
     char *dev = "sg1";
@@ -110,8 +109,8 @@ int cmd_info(char *device, int argc, char **argv)
            "-----"
            "---------\n");
     printf("%-8s %-8s %-16s %-10s %-20s %-10s %s", d->addr,
-           d->inquiry_data.vendor, d->inquiry_data.product, type, adapter,
-           emulation, dev);
+           d->inquiry_data.vendor, d->inquiry_data.product, d->device_type_name,
+           adapter, emulation, dev);
 
     scsi_close(d);
     return 0;
