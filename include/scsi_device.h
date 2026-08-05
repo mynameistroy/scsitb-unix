@@ -41,14 +41,15 @@ typedef struct {
     unsigned char wbus16;
     unsigned char wbus32;
     unsigned char reladr;
-    unsigned char vendor[9];
-    unsigned char product[17];
-    unsigned char revision[5];
+    unsigned char vendor[16];
+    unsigned char product[24];
+    unsigned char revision[8];
 } SCSI_INQUIRY;
 
 typedef struct {
     int handle;
     char name[32];
+    char addr[16];
     int is_toolbox_compatible;
     SCSI_INQUIRY inquiry_data;
     char sense_data[32];

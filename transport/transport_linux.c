@@ -103,6 +103,16 @@ int scsi_inquiry(SCSI_DEVICE *target)
         return -1;
     }
 
+    /* get the Channel:ID:LUN */
+    struct sg_scsi_id id;
+    if (ioctl(target->handle, SG_GET_SCSI_ID, &id))
+    {
+        printf("ioctl SG_GET_SCSI_ID failed (%d)\n", errno);
+        return -1;
+    }
+    snprintf(target->addr, sizeof(target->addr), "%d:%d:%d", id.channel,
+             id.scsi_id, id.lun);
+
     /* populate SCSI_DEVICE with information */
     if (extract_inquiry_data(response, target))
     {
