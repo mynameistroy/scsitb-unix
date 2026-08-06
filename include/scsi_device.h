@@ -51,6 +51,7 @@ typedef struct {
     char name[32];
     char addr[16];
     char device_type_name[16];
+    char host_device_name[32];
     int is_toolbox_compatible;
     SCSI_INQUIRY inquiry_data;
     char sense_data[32];

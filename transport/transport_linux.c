@@ -1,11 +1,15 @@
+#define _GNU_SOURCE
 
 #include "../include/scsi_device.h"
 
 #include <errno.h>
 #include <error.h>
 #include <fcntl.h>
+#include <libudev.h>
+#include <limits.h>
 #include <scsi/sg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -122,6 +126,65 @@ int scsi_inquiry(SCSI_DEVICE *target)
     strncpy(target->device_type_name, dtype_str,
             sizeof(target->device_type_name) - 1);
     free(dtype_str);
+
+    /* get host device information via udev */
+    struct udev *udev = udev_new();
+    if (NULL == udev)
+    {
+        printf("udev init failed\n");
+        strncpy(target->host_device_name, "Unknown",
+                sizeof(target->host_device_name));
+    }
+    else
+    {
+        char host_adapter[8];
+        snprintf(host_adapter, sizeof(host_adapter) - 1, "host%d", id.host_no);
+        struct udev_device *host = udev_device_new_from_subsystem_sysname(
+            udev, "scsi_host", host_adapter);
+        if (NULL == host)
+        {
+            printf("Failed to find udev device at %s\n", host_adapter);
+            udev_unref(udev);
+        }
+        else
+        {
+            /* get parent */
+            struct udev_device *pci_dev =
+                udev_device_get_parent_with_subsystem_devtype(host, "pci",
+                                                              NULL);
+            if (NULL == pci_dev)
+            {
+                printf("Failed to get pci device for %s\n", host_adapter);
+                udev_device_unref(host);
+                udev_unref(udev);
+            }
+            else
+            {
+                /* query database for vendor name */
+                const char *vendor = udev_device_get_property_value(
+                    pci_dev, "ID_VENDOR_FROM_DATABASE");
+
+                if (NULL == vendor)
+                {
+                    vendor = udev_device_get_sysattr_value(pci_dev, "vendor");
+                }
+
+                if (NULL == vendor)
+                {
+                    strncpy(target->host_device_name, "Unknown",
+                            sizeof(target->host_device_name) - 1);
+                }
+                else
+                {
+                    strncpy(target->host_device_name, vendor,
+                            sizeof(target->host_device_name) - 1);
+                }
+            }
+
+            udev_device_unref(pci_dev);
+            udev_unref(udev);
+        }
+    }
 
     return 0;
 }

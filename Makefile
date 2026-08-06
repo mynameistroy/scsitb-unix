@@ -72,8 +72,8 @@ ARCHFLAGS :=
 
 # Set platform-specific defaults based on detected OS
 ifeq ($(findstring Linux,$(UNAME_S)),Linux)
-    CFLAGS_PLATFORM += -DLITTLE_ENDIAN -fPIC 
-    LDFLAGS_PLATFORM += 
+    CFLAGS_PLATFORM += -DLITTLE_ENDIAN -fPIC -fPIE
+    LDFLAGS_PLATFORM += -ludev 
 		TRANSPORT = transport_linux
 endif
 
