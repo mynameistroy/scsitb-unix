@@ -6,10 +6,12 @@
 
 #define CMD_NONE 0
 #define CMD_INFO 1
+#define CMD_LSDIR 2
 
 void help(void);
 void cmd_arg_print(int argc, char **argv);
 int cmd_info(char *device, int cmd_argc, char **cmd_args);
+int cmd_list_files(char *device, int cmd_argc, char **cmd_args);
 
 int main(int argc, char **argv)
 {
@@ -51,6 +53,12 @@ int main(int argc, char **argv)
             command = CMD_INFO;
         }
 
+        /* scsitb lsdir <args> */
+        if (0 == strcasecmp("lsdir", cmd_argv))
+        {
+            command = CMD_LSDIR;
+        }
+
         /* specified device */
         if (0 == strcasecmp("-d", cmd_argv))
         {
@@ -64,6 +72,9 @@ int main(int argc, char **argv)
     {
         case CMD_INFO:
             return cmd_info(device, argc - cmd_offset, &argv[cmd_offset]);
+
+        case CMD_LSDIR:
+            return cmd_list_files(device, argc - cmd_offset, &argv[cmd_offset]);
 
         default:
             printf("Unknown action (%d), exiting...\n", command);
@@ -99,8 +110,8 @@ int cmd_info(char *device, int argc, char **argv)
     }
 
     scsi_inquiry(d);
-    char *emulation = "Fixed";
-    char *dev = "sg1";
+    char *emulation = "XXXXX";
+    char *dev = "XXX";
 
     printf("Addr     Vendor   Model            Type       Adapter            "
            "  Emulation  Dev\n");
@@ -112,5 +123,23 @@ int cmd_info(char *device, int argc, char **argv)
            d->host_device_name, emulation, dev);
 
     scsi_close(d);
+    return 0;
+}
+
+int cmd_list_files(char *device, int argc, char **argv)
+{
+    printf("LSIMG\n");
+
+    SCSI_DEVICE *d = scsi_open(device);
+    if (NULL == d)
+    {
+        printf("Error opening %s\n", device);
+        return -1;
+    }
+
+    int file_count = toolbox_cmd_count_files(d);
+
+    scsi_close(d);
+
     return 0;
 }

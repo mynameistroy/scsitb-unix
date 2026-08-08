@@ -57,11 +57,28 @@ typedef struct {
     char sense_data[32];
 } SCSI_DEVICE;
 
+typedef struct {
+    unsigned char status;
+    unsigned char asc;
+    unsigned char ascq;
+} SCSI_CMD_RESPONSE;
+
+typedef struct {
+    unsigned char cdb[16];
+    unsigned char cdb_len;
+    unsigned char *send_buffer;
+    unsigned int send_buffer_len;
+    unsigned char *recv_buffer;
+    unsigned int recv_buffer_len;
+} SCSI_CMD;
+
 /* SCSI transport functions */
 SCSI_DEVICE *scsi_open(char *device_name);
 void scsi_close(SCSI_DEVICE *target);
 int scsi_inquiry(SCSI_DEVICE *target);
+int scsi_cmd(SCSI_DEVICE *target, SCSI_CMD *cmd, SCSI_CMD_RESPONSE *response);
 
 int extract_inquiry_data(unsigned char *raw, SCSI_DEVICE *target);
+int get_cdb_len(unsigned char *cdb);
 char *device_type_to_str(int device_type);
 #endif

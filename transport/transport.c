@@ -25,6 +25,25 @@ char *device_type_to_str(int device_type)
     return str;
 }
 
+/* get cdb size */
+int get_cdb_len(unsigned char *cdb)
+{
+    int group_code = cdb[0] >> 5;
+    switch (group_code)
+    {
+        case 0:
+            return 6;
+        case 1:
+        case 2:
+            return 10;
+        case 5:
+            return 12;
+        default:
+            /* return nonsensical to likely force an error */
+            return 0xff;
+    }
+}
+
 #ifdef LITTLE_ENDIAN
 
 /* extract byte values to populate SCSI_DEVICE inquiry data */
