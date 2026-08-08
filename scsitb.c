@@ -128,6 +128,7 @@ int cmd_info(char *device, int argc, char **argv)
 
 int cmd_list_files(char *device, int argc, char **argv)
 {
+    toolbox_dir *dir = NULL;
     printf("LSIMG\n");
 
     SCSI_DEVICE *d = scsi_open(device);
@@ -137,8 +138,33 @@ int cmd_list_files(char *device, int argc, char **argv)
         return -1;
     }
 
-    int file_count = toolbox_cmd_count_files(d);
+    if (toolbox_cmd_list_files(d, &dir))
+    {
+        printf("Error listing files\n");
+        return -1;
+    }
 
+    toolbox_file_entry *file = dir->entries;
+    for (int i = 0; i < dir->count; i++)
+    {
+        long size = 0;
+        size |= file->size[0];
+        size = size << 1;
+        size |= file->size[1];
+        size = size << 1;
+        size |= file->size[2];
+        size = size << 1;
+        size |= file->size[3];
+        size = size << 1;
+        size |= file->size[4];
+
+        printf("%d %c %s %ld\n", file->index, file->type ? 'F' : 'D',
+               file->name, size);
+
+        file++;
+    }
+
+    toolbox_dir_free(dir);
     scsi_close(d);
 
     return 0;

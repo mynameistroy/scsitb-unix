@@ -133,7 +133,6 @@ int scsi_inquiry(SCSI_DEVICE *target)
         if (NULL == host)
         {
             printf("Failed to find udev device at %s\n", host_adapter);
-            udev_unref(udev);
         }
         else
         {
@@ -144,8 +143,6 @@ int scsi_inquiry(SCSI_DEVICE *target)
             if (NULL == pci_dev)
             {
                 printf("Failed to get pci device for %s\n", host_adapter);
-                udev_device_unref(host);
-                udev_unref(udev);
             }
             else
             {
@@ -169,86 +166,12 @@ int scsi_inquiry(SCSI_DEVICE *target)
                             sizeof(target->host_device_name) - 1);
                 }
             }
-
-            udev_device_unref(pci_dev);
-            udev_unref(udev);
         }
+        udev_device_unref(host);
     }
+    udev_unref(udev);
 
     free(cmd.recv_buffer);
-    return 0;
-}
-
-int toolbox_cmd_count_files(SCSI_DEVICE *target)
-{
-
-    unsigned char recv_buffer[1] = {0};
-
-    SCSI_CMD cmd;
-    memset(&cmd, 0, sizeof(SCSI_CMD));
-
-    memcpy(cmd.cdb, toolbox_count_files_cdb, sizeof(toolbox_count_files_cdb));
-    cmd.cdb_len = sizeof(toolbox_count_files_cdb);
-    cmd.recv_buffer = &recv_buffer[0];
-    cmd.recv_buffer_len = 1;
-
-    SCSI_CMD_RESPONSE response;
-
-    if (NULL == target)
-    {
-        printf("Invalid SCSI target\n");
-        return -1;
-    }
-
-    /* perform BLUESCSI_TOOLBOX_COUNT_FILES */
-    if (scsi_cmd(target, &cmd, &response))
-    {
-        printf("COUNT_FILES failed (%d)\n", errno);
-        return -1;
-    }
-
-    printf("file count %d\n", recv_buffer[0]);
-
-    toolbox_file_entry *file_buffer =
-        malloc(sizeof(toolbox_file_entry) * recv_buffer[0]);
-    if (NULL == file_buffer)
-    {
-        printf("Failed to allocate file list buffer\n");
-        return -1;
-    }
-
-    memcpy(cmd.cdb, toolbox_list_files_cdb, sizeof(toolbox_list_files_cdb));
-    cmd.cdb_len = sizeof(toolbox_list_files_cdb);
-    cmd.recv_buffer = (unsigned char *)file_buffer;
-    cmd.recv_buffer_len = sizeof(toolbox_file_entry) * recv_buffer[0];
-    /* perform BLUESCSI_TOOLBOX_LIST_FILES */
-    if (scsi_cmd(target, &cmd, &response))
-    {
-        printf("ioctl SG_IO LIST_FILES failed (%d)\n", errno);
-        free(file_buffer);
-        return -1;
-    }
-
-    toolbox_file_entry *file = file_buffer;
-    for (int i = 0; i < recv_buffer[0]; i++)
-    {
-        long size = 0;
-        size |= file->size[0];
-        size = size << 1;
-        size |= file->size[1];
-        size = size << 1;
-        size |= file->size[2];
-        size = size << 1;
-        size |= file->size[3];
-        size = size << 1;
-        size |= file->size[4];
-
-        printf("%d %c %s %ld\n", file->index, file->type ? 'F' : 'D',
-               file->name, size);
-
-        file++;
-    }
-    free(file_buffer);
     return 0;
 }
 

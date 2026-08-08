@@ -19,8 +19,8 @@ typedef struct {
 } toolbox_file_entry;
 
 typedef struct {
-    unsigned char count;          /* count of files in directory */
-    toolbox_file_entry entries[]; /* directory entries */
+    unsigned char count;         /* count of files in directory */
+    toolbox_file_entry *entries; /* directory entries */
 } toolbox_dir;
 
 /* toolbox SCSI cmd byte */
@@ -52,11 +52,14 @@ extern unsigned char toolbox_list_files_cdb[12];
 extern unsigned char toolbox_count_cds_cdb[12];
 extern unsigned char toolbox_send_file_end_cdb[12];
 
+/* free a toolbox_dir struct */
+void toolbox_dir_free(toolbox_dir *dir);
+
 /* get a count of files in a directory */
 int toolbox_cmd_count_files(SCSI_DEVICE *target);
 
 /* get the list of file/dir entries in a directory */
-int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir *dir);
+int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir **dir);
 
 /* get a file from a directory */
 int toolbox_cmd_get_file(SCSI_DEVICE *target, char *src, char *dst);
