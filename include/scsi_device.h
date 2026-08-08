@@ -55,6 +55,9 @@ typedef struct {
     int is_toolbox_compatible;
     SCSI_INQUIRY inquiry_data;
     char sense_data[32];
+    unsigned char id;
+    unsigned char lun;
+    unsigned char host_id;
 } SCSI_DEVICE;
 
 typedef struct {

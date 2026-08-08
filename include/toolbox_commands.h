@@ -16,12 +16,12 @@ typedef struct {
                             terminator */
     unsigned char
         size[5]; /* byte 35-39: file size (40 bit big endian unsigned) */
-} toolbox_file_entry;
+} TOOLBOX_FILE;
 
 typedef struct {
-    unsigned char count;         /* count of files in directory */
-    toolbox_file_entry *entries; /* directory entries */
-} toolbox_dir;
+    unsigned char count;   /* count of files in directory */
+    TOOLBOX_FILE *entries; /* directory entries */
+} TOOLBOX_DIR;
 
 /* toolbox SCSI cmd byte */
 #define TOOLBOX_SCSI_LIST_FILES 0xD0
@@ -33,7 +33,7 @@ typedef struct {
 #define TOOLBOX_SCSI_TOGGLE_DEBUG 0xD6
 #define TOOLBOX_SCSI_LIST_CDS 0xD7
 #define TOOLBOX_SCSI_SET_NEXT_CD 0xD8
-#define TOOLBOX_SCSI_TOOLBOX_METADATA 0xD9
+#define TOOLBOX_SCSI_METADATA 0xD9
 #define TOOLBOX_SCSI_COUNT_CDS 0xDA
 
 /* TOOLBOX_METADATA subcommands */
@@ -41,6 +41,17 @@ typedef struct {
 #define TOOLBOX_SCSI_META_GET_CAPABILITIES 0x1
 #define TOOLBOX_SCSI_META_SET_WORKING_DIR 0x2
 #define TOOLBOX_SCSI_META_GET_WORKING_DIR 0x3
+
+/* TOOLBOX device type */
+#define TOOLBOX_DEVICE_TYPE_FIXED 0
+#define TOOLBOX_DEVICE_TYPE_REMOVABLE 1
+#define TOOLBOX_DEVICE_TYPE_OPTICAL 2
+#define TOOLBOX_DEVICE_TYPE_FLOPPY 3
+#define TOOLBOX_DEVICE_TYPE_MAGNETO 4
+#define TOOLBOX_DEVICE_TYPE_TAPE 5
+#define TOOLBOX_DEVICE_TYPE_NETWORK 6
+#define TOOLBOX_DEVICE_TYPE_ZIP100 7
+#define TOOLBOX_DEVICE_TYPE_NONE 0xff
 
 /* TOOLBOX_METADATA capability flags */
 #define TOOLBOX_CAP_LARGE_TRANSFERS 0
@@ -53,13 +64,13 @@ extern unsigned char toolbox_count_cds_cdb[12];
 extern unsigned char toolbox_send_file_end_cdb[12];
 
 /* free a toolbox_dir struct */
-void toolbox_dir_free(toolbox_dir *dir);
+void toolbox_dir_free(TOOLBOX_DIR *dir);
 
 /* get a count of files in a directory */
 int toolbox_cmd_count_files(SCSI_DEVICE *target);
 
 /* get the list of file/dir entries in a directory */
-int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir **dir);
+int toolbox_cmd_list_files(SCSI_DEVICE *target, TOOLBOX_DIR **dir);
 
 /* get a file from a directory */
 int toolbox_cmd_get_file(SCSI_DEVICE *target, char *src, char *dst);
@@ -71,7 +82,7 @@ int toolbox_cmd_send_file(SCSI_DEVICE *target, char *src, char *dst);
 int toolbox_cmd_count_cds(SCSI_DEVICE *target);
 
 /* get the list of CD's */
-int toolbox_cmd_list_cds(SCSI_DEVICE *target, toolbox_dir *dir);
+int toolbox_cmd_list_cds(SCSI_DEVICE *target, TOOLBOX_DIR *dir);
 
 /* set next CD image */
 int toolbox_cmd_set_next_cd(SCSI_DEVICE *target, int index);
@@ -81,6 +92,16 @@ int toolbox_cmd_set_debug(SCSI_DEVICE *target, int debug);
 int toolbox_cmd_get_debug(SCSI_DEVICE *target, int *debug);
 
 /* get toolbox metadata */
-int toolbox_cmd_get_metadata(SCSI_DEVICE *target);
+int toolbox_cmd_get_metadata(SCSI_DEVICE *target, unsigned char data_type,
+                             unsigned char *metadata,
+                             unsigned int *metadata_len);
+int toolbox_cmd_list_devices(SCSI_DEVICE *target, unsigned char *device_list);
+int toolbox_cmd_get_capabilities(SCSI_DEVICE *target,
+                                 unsigned char capabilities[]);
+int toolbox_cmd_set_working_dir(SCSI_DEVICE *target, char *directory);
+int toolbox_cmd_get_working_dir(SCSI_DEVICE *target, char *directory,
+                                unsigned int *dir_len);
+
+char *toolbox_s2s_to_str(unsigned char s2s_type);
 
 #endif

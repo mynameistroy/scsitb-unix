@@ -13,12 +13,39 @@ unsigned char toolbox_count_files_cdb[12] = {0xD2, 0, 0, 0, 0, 0,
 unsigned char toolbox_list_files_cdb[12] = {0xD0, 0, 0, 0, 0, 0,
                                             0,    0, 0, 0, 0, 0};
 
-void toolbox_dir_free(toolbox_dir *dir)
+void toolbox_dir_free(TOOLBOX_DIR *dir)
 {
     if (NULL != dir)
     {
         free(dir->entries);
         free(dir);
+    }
+}
+
+char *toolbox_s2s_to_str(unsigned char s2s_type)
+{
+    switch (s2s_type)
+    {
+        case TOOLBOX_DEVICE_TYPE_FIXED:
+            return "Fixed";
+        case TOOLBOX_DEVICE_TYPE_REMOVABLE:
+            return "Removable";
+        case TOOLBOX_DEVICE_TYPE_OPTICAL:
+            return "Optical";
+        case TOOLBOX_DEVICE_TYPE_FLOPPY:
+            return "Floppy";
+        case TOOLBOX_DEVICE_TYPE_MAGNETO:
+            return "Magneto";
+        case TOOLBOX_DEVICE_TYPE_TAPE:
+            return "Tape";
+        case TOOLBOX_DEVICE_TYPE_NETWORK:
+            return "Network";
+        case TOOLBOX_DEVICE_TYPE_ZIP100:
+            return "Zip100";
+        case TOOLBOX_DEVICE_TYPE_NONE:
+            return "None";
+        default:
+            return "Unknown";
     }
 }
 
@@ -55,7 +82,7 @@ int toolbox_cmd_count_files(SCSI_DEVICE *target)
     return recv_buffer[0];
 }
 
-int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir **dir)
+int toolbox_cmd_list_files(SCSI_DEVICE *target, TOOLBOX_DIR **dir)
 {
     int file_count = 0;
     SCSI_CMD cmd;
@@ -77,8 +104,7 @@ int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir **dir)
         return -1;
     }
 
-    toolbox_file_entry *file_buffer =
-        malloc(sizeof(toolbox_file_entry) * file_count);
+    TOOLBOX_FILE *file_buffer = malloc(sizeof(TOOLBOX_FILE) * file_count);
     if (NULL == file_buffer)
     {
         printf("Failed to allocate file list buffer\n");
@@ -88,7 +114,7 @@ int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir **dir)
     memcpy(cmd.cdb, toolbox_list_files_cdb, sizeof(toolbox_list_files_cdb));
     cmd.cdb_len = sizeof(toolbox_list_files_cdb);
     cmd.recv_buffer = (unsigned char *)file_buffer;
-    cmd.recv_buffer_len = sizeof(toolbox_file_entry) * file_count;
+    cmd.recv_buffer_len = sizeof(TOOLBOX_FILE) * file_count;
     ;
     /* perform BLUESCSI_TOOLBOX_LIST_FILES */
     if (scsi_cmd(target, &cmd, &response))
@@ -98,7 +124,7 @@ int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir **dir)
         return -1;
     }
 
-    *dir = malloc(sizeof(toolbox_dir));
+    *dir = malloc(sizeof(TOOLBOX_DIR));
     if (NULL == *dir)
     {
         printf("alloc error\n");
@@ -109,4 +135,64 @@ int toolbox_cmd_list_files(SCSI_DEVICE *target, toolbox_dir **dir)
     (*dir)->count = file_count;
     (*dir)->entries = file_buffer;
     return 0;
+}
+
+int toolbox_cmd_get_metadata(SCSI_DEVICE *target, unsigned char data_type,
+                             unsigned char *metadata,
+                             unsigned int *metadata_len)
+{
+    SCSI_CMD cmd;
+    SCSI_CMD_RESPONSE response;
+
+    if (NULL == target)
+    {
+        return -1;
+    }
+
+    if (data_type > TOOLBOX_SCSI_META_GET_WORKING_DIR)
+    {
+        return -1;
+    }
+
+    if (NULL == metadata)
+    {
+        return -1;
+    }
+
+    if (NULL == metadata_len || 0 == *metadata_len)
+    {
+        return -1;
+    }
+
+    memset(&cmd, 0, sizeof(SCSI_CMD));
+    memset(&response, 0, sizeof(SCSI_CMD_RESPONSE));
+
+    cmd.cdb[0] = TOOLBOX_SCSI_METADATA;
+    cmd.cdb[1] = data_type;
+    cmd.cdb_len = 10;
+    cmd.recv_buffer = metadata;
+    cmd.recv_buffer_len = *metadata_len;
+
+    /* get the list of devices */
+    if (scsi_cmd(target, &cmd, &response))
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int toolbox_cmd_list_devices(SCSI_DEVICE *target, unsigned char device_list[])
+{
+    unsigned int size = 8;
+    return toolbox_cmd_get_metadata(target, TOOLBOX_SCSI_META_LIST_DEVICES,
+                                    device_list, &size);
+}
+
+int toolbox_cmd_get_capabilities(SCSI_DEVICE *target,
+                                 unsigned char capabilities[])
+{
+    unsigned int size = 8;
+    return toolbox_cmd_get_metadata(target, TOOLBOX_SCSI_META_GET_CAPABILITIES,
+                                    capabilities, &size);
 }

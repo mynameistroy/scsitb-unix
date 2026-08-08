@@ -2,7 +2,6 @@
 #define _GNU_SOURCE
 
 #include "../include/scsi_device.h"
-#include "../include/toolbox_commands.h"
 
 #include <endian.h>
 #include <errno.h>
@@ -101,6 +100,10 @@ int scsi_inquiry(SCSI_DEVICE *target)
     }
     snprintf(target->addr, sizeof(target->addr), "%d:%d:%d", id.channel,
              id.scsi_id, id.lun);
+
+    target->id = id.scsi_id;
+    target->lun = id.lun;
+    target->host_id = id.host_no;
 
     /* populate SCSI_DEVICE with information */
     if (extract_inquiry_data(cmd.recv_buffer, target))
@@ -233,7 +236,7 @@ int scsi_cmd(SCSI_DEVICE *target, SCSI_CMD *cmd, SCSI_CMD_RESPONSE *response)
     if (SG_INFO_OK != (io_hdr.info & SG_INFO_OK_MASK))
     {
         printf("SCSI CMD failed (status: 0x%X, host_status: 0x%X, "
-               "driver_status: 0x%X",
+               "driver_status: 0x%X\n",
                io_hdr.status, io_hdr.host_status, io_hdr.driver_status);
         return -1;
     }

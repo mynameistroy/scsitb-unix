@@ -109,8 +109,21 @@ int cmd_info(char *device, int argc, char **argv)
         return -1;
     }
 
+    unsigned char device_list[8] = {0};
+    unsigned char capabilities[8] = {0};
+
     scsi_inquiry(d);
-    char *emulation = "XXXXX";
+    toolbox_cmd_list_devices(d, device_list);
+    toolbox_cmd_get_capabilities(d, capabilities);
+
+    printf("API:%d\n", capabilities[0]);
+    printf("CAP_LARGE_TRANSFERS: %s\n",
+           capabilities[1] & TOOLBOX_CAP_LARGE_TRANSFERS ? "Yes" : "No");
+    printf("CAP_LARGE_SEND: %s\n",
+           capabilities[1] & TOOLBOX_CAP_LARGE_SEND ? "Yes" : "No");
+    printf("CAP_WORKING_DIR: %s\n",
+           capabilities[1] & TOOLBOX_CAP_SET_WORKING_DIR ? "Yes" : "No");
+
     char *dev = "XXX";
 
     printf("Addr     Vendor   Model            Type       Adapter            "
@@ -120,7 +133,7 @@ int cmd_info(char *device, int argc, char **argv)
            "---------\n");
     printf("%-8s %-8s %-16s %-10s %-20s %-10s %s", d->addr,
            d->inquiry_data.vendor, d->inquiry_data.product, d->device_type_name,
-           d->host_device_name, emulation, dev);
+           d->host_device_name, toolbox_s2s_to_str(device_list[d->id]), dev);
 
     scsi_close(d);
     return 0;
@@ -128,9 +141,9 @@ int cmd_info(char *device, int argc, char **argv)
 
 int cmd_list_files(char *device, int argc, char **argv)
 {
-    toolbox_dir *dir = NULL;
-    printf("LSIMG\n");
+    TOOLBOX_DIR *dir = NULL;
 
+    cmd_arg_print(argc, argv);
     SCSI_DEVICE *d = scsi_open(device);
     if (NULL == d)
     {
@@ -144,7 +157,7 @@ int cmd_list_files(char *device, int argc, char **argv)
         return -1;
     }
 
-    toolbox_file_entry *file = dir->entries;
+    TOOLBOX_FILE *file = dir->entries;
     for (int i = 0; i < dir->count; i++)
     {
         long size = 0;
@@ -158,7 +171,7 @@ int cmd_list_files(char *device, int argc, char **argv)
         size = size << 1;
         size |= file->size[4];
 
-        printf("%d %c %s %ld\n", file->index, file->type ? 'F' : 'D',
+        printf("%-2d %c %-33s %8ld B\n", file->index, file->type ? 'F' : 'D',
                file->name, size);
 
         file++;
@@ -169,3 +182,5 @@ int cmd_list_files(char *device, int argc, char **argv)
 
     return 0;
 }
+
+int cmd_list_images(char *device, int argc, char **argv) {}
