@@ -58,6 +58,10 @@ typedef struct {
     unsigned char id;
     unsigned char lun;
     unsigned char host_id;
+    unsigned char channel;
+    unsigned char api;
+    unsigned char capabilities;
+    unsigned char s2s_type;
 } SCSI_DEVICE;
 
 typedef struct {
@@ -76,6 +80,7 @@ typedef struct {
 } SCSI_CMD;
 
 /* SCSI transport functions */
+int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count);
 SCSI_DEVICE *scsi_open(char *device_name);
 void scsi_close(SCSI_DEVICE *target);
 int scsi_inquiry(SCSI_DEVICE *target);

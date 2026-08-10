@@ -80,10 +80,15 @@ int extract_inquiry_data(unsigned char *raw, SCSI_DEVICE *target)
     target->inquiry_data.wbus32 = (raw[7] >> 1 & 0x11);
 
     /* vendor */
+    memset(target->inquiry_data.vendor, 0, sizeof(target->inquiry_data.vendor));
     memcpy(target->inquiry_data.vendor, &raw[8], 8);
     /* product */
+    memset(target->inquiry_data.product, 0,
+           sizeof(target->inquiry_data.product));
     memcpy(target->inquiry_data.product, &raw[16], 16);
     /* revision */
+    memset(target->inquiry_data.revision, 0,
+           sizeof(target->inquiry_data.revision));
     memcpy(target->inquiry_data.revision, &raw[32], 4);
 
     return 0;

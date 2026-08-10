@@ -36,6 +36,10 @@ typedef struct {
 #define TOOLBOX_SCSI_METADATA 0xD9
 #define TOOLBOX_SCSI_COUNT_CDS 0xDA
 
+/* TOOLBOX TOOGLE_DEBUG subcommands */
+#define TOOLBOX_SCSI_DEBUG_SET 0
+#define TOOLBOX_SCSI_DEBUG_GET 1
+
 /* TOOLBOX_METADATA subcommands */
 #define TOOLBOX_SCSI_META_LIST_DEVICES 0
 #define TOOLBOX_SCSI_META_GET_CAPABILITIES 0x1
@@ -82,7 +86,7 @@ int toolbox_cmd_send_file(SCSI_DEVICE *target, char *src, char *dst);
 int toolbox_cmd_count_cds(SCSI_DEVICE *target);
 
 /* get the list of CD's */
-int toolbox_cmd_list_cds(SCSI_DEVICE *target, TOOLBOX_DIR *dir);
+int toolbox_cmd_list_cds(SCSI_DEVICE *target, TOOLBOX_DIR **dir);
 
 /* set next CD image */
 int toolbox_cmd_set_next_cd(SCSI_DEVICE *target, int index);
@@ -103,5 +107,5 @@ int toolbox_cmd_get_working_dir(SCSI_DEVICE *target, char *directory,
                                 unsigned int *dir_len);
 
 char *toolbox_s2s_to_str(unsigned char s2s_type);
-
+long toolbox_get_file_size(TOOLBOX_FILE *file);
 #endif

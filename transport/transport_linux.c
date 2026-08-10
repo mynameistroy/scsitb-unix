@@ -1,8 +1,9 @@
-#include <iso646.h>
 #define _GNU_SOURCE
 
 #include "../include/scsi_device.h"
+#include "../include/toolbox_commands.h"
 
+#include <dirent.h>
 #include <endian.h>
 #include <errno.h>
 #include <error.h>
@@ -14,9 +15,103 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 extern int errno;
+
+int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count)
+{
+    if (NULL != *device_list)
+    {
+        return -1;
+    }
+
+    *device_list = malloc(sizeof(SCSI_DEVICE *));
+    *count = 0;
+
+    /* check all targets in the /sys/bus/scsi/devices */
+    DIR *dev_dir = opendir("/sys/bus/scsi/devices/");
+    if (NULL == dev_dir)
+    {
+        printf("Couldn't open device dir %s\n", strerror(errno));
+        return -1;
+    }
+
+    for (struct dirent *f = readdir(dev_dir); f != NULL; f = readdir(dev_dir))
+    {
+        /* only look at X:X:X:X entries */
+        int colons = 0;
+        for (size_t i = 0; i < strlen(f->d_name); i++)
+        {
+            if (':' == f->d_name[i])
+            {
+                colons++;
+            }
+        }
+        if (3 != colons)
+        {
+            continue;
+        }
+
+        char block_dev_dir[384] = {0};
+        snprintf(block_dev_dir, sizeof(block_dev_dir),
+                 "/sys/bus/scsi/devices/%s/scsi_generic/", f->d_name);
+
+        DIR *block_dir = opendir(block_dev_dir);
+        if (NULL == block_dir)
+        {
+            printf("Couldn't open %s (%s)\n", block_dev_dir, strerror(errno));
+            closedir(dev_dir);
+            return -1;
+        }
+
+        struct dirent *block_dev = readdir(block_dir);
+        block_dev = readdir(block_dir);
+        block_dev = readdir(block_dir);
+        char block_dev_str[16] = {0};
+        snprintf(block_dev_str, sizeof(block_dev_str), "/dev/%s",
+                 block_dev->d_name);
+
+        /* /dev/sd* device acquired, now file out the SCSI_DEVICE struct */
+        SCSI_DEVICE *dev = scsi_open(block_dev_str);
+        if (NULL == dev)
+        {
+            printf("couldn't open scsi device %s\n", block_dev_str);
+            closedir(block_dir);
+            continue;
+        }
+
+        /* send a toolbox command to validate if it is a compatible device
+         */
+        unsigned char buffer[8];
+
+        if (toolbox_cmd_get_capabilities(dev, buffer))
+        {
+            /* Not a compatible device */
+            scsi_close(dev);
+        }
+        else
+        {
+            /* supported so add to the list */
+            scsi_inquiry(dev);
+            unsigned char s2s_list[8] = {0};
+            toolbox_cmd_list_devices(dev, s2s_list);
+            strcpy(dev->name, block_dev_str);
+            dev->api = buffer[0];
+            dev->capabilities = buffer[1];
+            dev->s2s_type = s2s_list[dev->id];
+            (*count)++;
+            *device_list = realloc(*device_list, *count);
+            *device_list[*count - 1] = dev;
+        }
+        closedir(block_dir);
+    }
+
+    closedir(dev_dir);
+
+    return 0;
+}
 
 SCSI_DEVICE *scsi_open(char *device_name)
 {
@@ -46,6 +141,8 @@ SCSI_DEVICE *scsi_open(char *device_name)
         free(device);
         return NULL;
     }
+
+    strcpy(device->name, basename(device_name));
     return device;
 }
 
@@ -85,7 +182,7 @@ int scsi_inquiry(SCSI_DEVICE *target)
 
     if (scsi_cmd(target, &cmd, &response))
     {
-        printf("scsi_inquiry: scsi_cmd() failed (%d)\n", errno);
+        printf("scsi_inquiry: scsi_cmd() failed");
         free(cmd.recv_buffer);
         return -1;
     }
@@ -94,7 +191,7 @@ int scsi_inquiry(SCSI_DEVICE *target)
     struct sg_scsi_id id;
     if (ioctl(target->handle, SG_GET_SCSI_ID, &id))
     {
-        printf("ioctl SG_GET_SCSI_ID failed (%d)\n", errno);
+        printf("ioctl SG_GET_SCSI_ID failed (%s)\n", strerror(errno));
         free(cmd.recv_buffer);
         return -1;
     }
@@ -104,6 +201,7 @@ int scsi_inquiry(SCSI_DEVICE *target)
     target->id = id.scsi_id;
     target->lun = id.lun;
     target->host_id = id.host_no;
+    target->channel = id.channel;
 
     /* populate SCSI_DEVICE with information */
     if (extract_inquiry_data(cmd.recv_buffer, target))
