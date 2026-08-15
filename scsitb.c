@@ -36,7 +36,7 @@ void scsitb_log(int line, char *file, int LEVEL, char *fmt, ...)
     char log_buffer[128] = {0};
     va_list args;
 
-    if (LEVEL >= log_level)
+    if (LEVEL <= log_level)
     {
         va_start(args, fmt);
         vsnprintf(log_buffer, sizeof(log_buffer), fmt, args);
@@ -87,21 +87,6 @@ int main(int argc, char **argv)
         }
     }
 
-    if (argc < 3)
-    {
-        printf("Error: missing device\n");
-        help(argv[0]);
-        return INVALID_ARGS;
-    }
-
-    /* second arg is device */
-    /* if cmd is info device is options, otherwise required */
-    if ((CMD_INFO != command) && (NULL == argv[1]))
-    {
-        printf("Error: missing device\n");
-        return CMD_FAILED;
-    }
-
     SCSI_DEVICE **device_list = NULL;
     unsigned int dev_count = 0;
 
@@ -127,22 +112,14 @@ int main(int argc, char **argv)
         }
     }
 
-    if (argc < 4)
-    {
-        for (unsigned int i = 0; i < dev_count; i++)
-        {
-            scsi_close(device_list[i]);
-        }
-        free(device_list);
-        printf("Error: missing command\n");
-        help(argv[0]);
-        return INVALID_ARGS;
-    }
-
     /* first arg is always a command */
-    if (0 == strcasecmp("info", argv[2]))
+    if (0 == strcasecmp("info", argv[1]))
     {
         /* scsitb info <args> */
+        command = CMD_INFO;
+    }
+    else if (0 == strcasecmp("info", argv[2]))
+    {
         command = CMD_INFO;
     }
     else if (0 == strcasecmp("lsdir", argv[2]))
@@ -178,6 +155,13 @@ int main(int argc, char **argv)
         }
         free(device_list);
         printf("Error: invalid command %s\n", argv[2]);
+        return CMD_FAILED;
+    }
+
+    /* if cmd is info device is options, otherwise required */
+    if ((CMD_INFO != command) && (argc < 3))
+    {
+        printf("Error: missing device\n");
         return CMD_FAILED;
     }
 
