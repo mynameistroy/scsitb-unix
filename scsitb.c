@@ -9,18 +9,19 @@
 #include "include/toolbox_commands.h"
 
 #define CMD_NONE 0
-#define CMD_INFO 1
+#define CMD_INFO_ALL 1
 #define CMD_LSDIR 2
 #define CMD_LSCDS 3
 #define CMD_GET 4
 #define CMD_DEBUG 5
 #define CMD_SET_CD 6
 #define CMD_PUT 7
+#define CMD_INFO_DEVICE 8
 
 void help(char *exe_name);
 void cmd_arg_print(int argc, char **argv);
-int cmd_info(char *device, SCSI_DEVICE **device_list, unsigned int dev_count,
-             int cmd_argc, char **cmd_args);
+int cmd_info(SCSI_DEVICE *device, SCSI_DEVICE **device_list,
+             unsigned int dev_count, int cmd_argc, char **cmd_args);
 int cmd_info_device(SCSI_DEVICE *device, int cmd_argc, char **cmd_args);
 int cmd_list_files(SCSI_DEVICE *device, int cmd_argc, char **cmd_args);
 int cmd_list_cds(SCSI_DEVICE *device, int cmd_argc, char **cmd_args);
@@ -116,11 +117,11 @@ int main(int argc, char **argv)
     if (0 == strcasecmp("info", argv[1]))
     {
         /* scsitb info <args> */
-        command = CMD_INFO;
+        command = CMD_INFO_ALL;
     }
     else if (0 == strcasecmp("info", argv[2]))
     {
-        command = CMD_INFO;
+        command = CMD_INFO_DEVICE;
     }
     else if (0 == strcasecmp("lsdir", argv[2]))
     {
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
     }
 
     /* if cmd is info device is options, otherwise required */
-    if ((CMD_INFO != command) && (argc < 3))
+    if ((CMD_INFO_ALL != command) && (argc < 3))
     {
         printf("Error: missing device\n");
         return CMD_FAILED;
@@ -167,8 +168,13 @@ int main(int argc, char **argv)
 
     switch (command)
     {
-        case CMD_INFO:
-            cmd_info(argv[2], device_list, dev_count, argc - cmd_offset,
+        case CMD_INFO_ALL:
+            cmd_info(NULL, device_list, dev_count, argc - cmd_offset,
+                     &argv[cmd_offset]);
+            break;
+
+        case CMD_INFO_DEVICE:
+            cmd_info(target_device, device_list, dev_count, argc - cmd_offset,
                      &argv[cmd_offset]);
             break;
 
@@ -254,8 +260,8 @@ void cmd_arg_print(int argc, char **argv)
     LOG(VERBOSE, "\n");
 }
 
-int cmd_info(char *device, SCSI_DEVICE **device_list, unsigned int dev_count,
-             int argc, char **argv)
+int cmd_info(SCSI_DEVICE *device, SCSI_DEVICE **device_list,
+             unsigned int dev_count, int argc, char **argv)
 {
     printf("Addr     Vendor   Model            Type       Adapter            "
            "  Emulation  Dev\n");
@@ -264,16 +270,7 @@ int cmd_info(char *device, SCSI_DEVICE **device_list, unsigned int dev_count,
            "---------\n");
     if (NULL != device)
     {
-        char full_dev_path[64] = {0};
-        snprintf(full_dev_path, sizeof(full_dev_path), "/dev/%s", device);
-        SCSI_DEVICE *d = scsi_open(full_dev_path);
-        if (NULL == d)
-        {
-            printf("Error: Couldn't open %s\n", device);
-            return CMD_FAILED;
-        }
-        cmd_info_device(d, argc, argv);
-        scsi_close(d);
+        cmd_info_device(device, argc, argv);
     }
     else
     {
@@ -292,7 +289,7 @@ int cmd_info_device(SCSI_DEVICE *device, int argc, char **argv)
 
     char *dev = "XXX";
 
-    printf("%-8s %-8s %-16s %-10s %-20s %-10s %s", basename(device->name),
+    printf("%-8s %-8s %-16s %-10s %-20s %-10s %s\n", basename(device->name),
            device->inquiry_data.vendor, device->inquiry_data.product,
            device->device_type_name, device->host_device_name,
            toolbox_s2s_to_str(device->s2s_type), dev);

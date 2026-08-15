@@ -28,14 +28,15 @@ int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count)
         LOG(VERBOSE, "get_scsi_device_list() invalid args\n");
         return INVALID_ARGS;
     }
-
-    *device_list = malloc(sizeof(SCSI_DEVICE *));
-    if (NULL == *device_list)
-    {
-        LOG(VERBOSE, "get_scsi_device_list() SCSI_DEVICE allocation error\n");
-        return ALLOC_ERROR;
-    }
-    *count = 0;
+    /*
+        *device_list = malloc(sizeof(SCSI_DEVICE *));
+        if (NULL == *device_list)
+        {
+            LOG(VERBOSE, "get_scsi_device_list() SCSI_DEVICE allocation
+       error\n"); return ALLOC_ERROR;
+        }
+        *count = 0;
+        */
 
     /* check all targets in the /sys/bus/scsi/devices */
     DIR *dev_dir = opendir("/sys/bus/scsi/devices/");
@@ -112,8 +113,16 @@ int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count)
             dev->capabilities = buffer[1];
             dev->s2s_type = s2s_list[dev->id];
             (*count)++;
-            *device_list = realloc(*device_list, *count);
-            *device_list[*count - 1] = dev;
+            SCSI_DEVICE **new_device_list =
+                realloc(*device_list, sizeof(SCSI_DEVICE *) * (*count));
+            if (NULL == device_list)
+            {
+                printf(
+                    "get_scsi_device_list() Couldn't alloc new device_list\n");
+                return ALLOC_ERROR;
+            }
+            *device_list = new_device_list;
+            (*device_list)[*count - 1] = dev;
         }
         closedir(block_dir);
     }
