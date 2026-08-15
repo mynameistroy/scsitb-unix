@@ -89,7 +89,7 @@ int toolbox_cmd_count_cds(SCSI_DEVICE *target);
 int toolbox_cmd_list_cds(SCSI_DEVICE *target, TOOLBOX_DIR **dir);
 
 /* set next CD image */
-int toolbox_cmd_set_next_cd(SCSI_DEVICE *target, int index);
+int toolbox_cmd_set_next_cd(SCSI_DEVICE *target, unsigned char index);
 
 /* set/get debug */
 int toolbox_cmd_set_debug(SCSI_DEVICE *target, int debug);

@@ -2,6 +2,7 @@
 #define __SCSI_DEVICE_H__
 
 #include <memory.h>
+#include <scsi/scsi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -65,6 +66,7 @@ typedef struct {
 } SCSI_DEVICE;
 
 typedef struct {
+    int error;
     unsigned char status;
     unsigned char asc;
     unsigned char ascq;

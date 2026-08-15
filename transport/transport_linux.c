@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 
 #include "../include/scsi_device.h"
+#include "../include/scsitb.h"
 #include "../include/toolbox_commands.h"
 
 #include <dirent.h>
@@ -24,18 +25,25 @@ int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count)
 {
     if (NULL != *device_list)
     {
-        return -1;
+        LOG(VERBOSE, "get_scsi_device_list() invalid args\n");
+        return INVALID_ARGS;
     }
 
     *device_list = malloc(sizeof(SCSI_DEVICE *));
+    if (NULL == *device_list)
+    {
+        LOG(VERBOSE, "get_scsi_device_list() SCSI_DEVICE allocation error\n");
+        return ALLOC_ERROR;
+    }
     *count = 0;
 
     /* check all targets in the /sys/bus/scsi/devices */
     DIR *dev_dir = opendir("/sys/bus/scsi/devices/");
     if (NULL == dev_dir)
     {
-        printf("Couldn't open device dir %s\n", strerror(errno));
-        return -1;
+        LOGF(VERBOSE, "get_scsi_device_list() Couldn't open device dir %s\n",
+             strerror(errno));
+        return CMD_FAILED;
     }
 
     for (struct dirent *f = readdir(dev_dir); f != NULL; f = readdir(dev_dir))
@@ -61,23 +69,25 @@ int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count)
         DIR *block_dir = opendir(block_dev_dir);
         if (NULL == block_dir)
         {
-            printf("Couldn't open %s (%s)\n", block_dev_dir, strerror(errno));
+            LOGF(VERBOSE, "get_scsi_device_list() Couldn't open %s (%s)\n",
+                 block_dev_dir, strerror(errno));
             closedir(dev_dir);
-            return -1;
+            return CMD_FAILED;
         }
 
         struct dirent *block_dev = readdir(block_dir);
         block_dev = readdir(block_dir);
         block_dev = readdir(block_dir);
         char block_dev_str[16] = {0};
-        snprintf(block_dev_str, sizeof(block_dev_str), "/dev/%s",
+        snprintf(block_dev_str, strlen(block_dev->d_name) + 6, "/dev/%s",
                  block_dev->d_name);
 
         /* /dev/sd* device acquired, now file out the SCSI_DEVICE struct */
         SCSI_DEVICE *dev = scsi_open(block_dev_str);
         if (NULL == dev)
         {
-            printf("couldn't open scsi device %s\n", block_dev_str);
+            printf("get_scsi_device_list() Couldn't open scsi device %s\n",
+                   block_dev_str);
             closedir(block_dir);
             continue;
         }
@@ -119,7 +129,7 @@ SCSI_DEVICE *scsi_open(char *device_name)
 
     if (NULL == device_name)
     {
-        printf("Invalid device_name");
+        LOG(VERBOSE, "scsi_open() Invalid device_name\n");
         return NULL;
     }
 
@@ -129,7 +139,7 @@ SCSI_DEVICE *scsi_open(char *device_name)
     device = malloc(sizeof(SCSI_DEVICE));
     if (NULL == device)
     {
-        printf("Allocation Error\n");
+        LOG(VERBOSE, "scsi_open() SCSI_DEVICE allocation error\n");
         return NULL;
     }
 
@@ -137,7 +147,8 @@ SCSI_DEVICE *scsi_open(char *device_name)
     device->handle = open(device_name, O_RDWR);
     if (device->handle < 0)
     {
-        printf("scsi_open failed for %s\n", device_name);
+        LOGF(VERBOSE, "scsi_open() failed for %s:%s\n", device_name,
+             strerror(errno));
         free(device);
         return NULL;
     }
@@ -166,8 +177,8 @@ int scsi_inquiry(SCSI_DEVICE *target)
 {
     if (NULL == target)
     {
-        printf("Invalid SCSI target\n");
-        return -1;
+        LOG(VERBOSE, "scsi_inquiry() Invalid SCSI target\n");
+        return INVALID_ARGS;
     }
 
     /* perform INQUIRY */
@@ -182,18 +193,21 @@ int scsi_inquiry(SCSI_DEVICE *target)
 
     if (scsi_cmd(target, &cmd, &response))
     {
-        printf("scsi_inquiry: scsi_cmd() failed");
+        LOGF(VERBOSE,
+             "scsi_inquiry() scsi_cmd() failed Errno:%d SCSI Status:%d\n",
+             response.error, response.status);
         free(cmd.recv_buffer);
-        return -1;
+        return CMD_FAILED;
     }
 
     /* get the Channel:ID:LUN */
     struct sg_scsi_id id;
     if (ioctl(target->handle, SG_GET_SCSI_ID, &id))
     {
-        printf("ioctl SG_GET_SCSI_ID failed (%s)\n", strerror(errno));
+        LOGF(VERBOSE, "scsi_inquiry() SG_GET_SCSI_ID failed (%s)\n",
+             strerror(errno));
         free(cmd.recv_buffer);
-        return -1;
+        return CMD_FAILED;
     }
     snprintf(target->addr, sizeof(target->addr), "%d:%d:%d", id.channel,
              id.scsi_id, id.lun);
@@ -206,9 +220,9 @@ int scsi_inquiry(SCSI_DEVICE *target)
     /* populate SCSI_DEVICE with information */
     if (extract_inquiry_data(cmd.recv_buffer, target))
     {
-        printf("Error extracting inquiry data\n");
+        LOG(VERBOSE, "scsi_inquiry() Error extracting inquiry data\n");
         free(cmd.recv_buffer);
-        return -1;
+        return CMD_FAILED;
     }
 
     /* get the string for device_type */
@@ -221,7 +235,7 @@ int scsi_inquiry(SCSI_DEVICE *target)
     struct udev *udev = udev_new();
     if (NULL == udev)
     {
-        printf("udev init failed\n");
+        LOG(VERBOSE, "scsi_inquiry() udev init failed\n");
         strncpy(target->host_device_name, "Unknown",
                 sizeof(target->host_device_name));
     }
@@ -233,7 +247,8 @@ int scsi_inquiry(SCSI_DEVICE *target)
             udev, "scsi_host", host_adapter);
         if (NULL == host)
         {
-            printf("Failed to find udev device at %s\n", host_adapter);
+            LOGF(VERBOSE, "scsi_inquiry() Failed to find udev device at %s\n",
+                 host_adapter);
         }
         else
         {
@@ -243,7 +258,9 @@ int scsi_inquiry(SCSI_DEVICE *target)
                                                               NULL);
             if (NULL == pci_dev)
             {
-                printf("Failed to get pci device for %s\n", host_adapter);
+                LOGF(VERBOSE,
+                     "scsi_inquiry() Failed to get pci device for %s\n",
+                     host_adapter);
             }
             else
             {
@@ -282,37 +299,45 @@ int scsi_cmd(SCSI_DEVICE *target, SCSI_CMD *cmd, SCSI_CMD_RESPONSE *response)
 
     sg_io_hdr_t io_hdr;
     memset(&io_hdr, 0, sizeof(sg_io_hdr_t));
+    memset(response, 0, sizeof(SCSI_CMD_RESPONSE));
 
     if (NULL == target || NULL == cmd || NULL == response)
     {
-        printf("scsi_cmd: invalid function argument\n");
-        return -1;
+        LOG(VERBOSE, "scsi_cmd() invalid arg\n");
+        return INVALID_ARGS;
     }
 
     /* set scsi cmd direction */
     if (NULL != cmd->recv_buffer && NULL != cmd->send_buffer)
     {
+        // printf("To & From Device, using send_buffer for both len:%d\n",
+        //      cmd->send_buffer_len);
         io_hdr.dxfer_direction = SG_DXFER_TO_FROM_DEV;
         io_hdr.dxfer_len = cmd->send_buffer_len;
         io_hdr.dxferp = cmd->send_buffer;
     }
     else if (NULL == cmd->recv_buffer && NULL == cmd->send_buffer)
     {
+        // printf("No data transfer to/from device\n");
         io_hdr.dxfer_direction = SG_FLAG_NO_DXFER;
         io_hdr.dxfer_len = 0;
         io_hdr.dxferp = NULL;
     }
     else if (NULL == cmd->send_buffer)
     {
+        // printf("From Device, using recv_buffer len:%d\n",
+        // cmd->recv_buffer_len);
         io_hdr.dxfer_direction = SG_DXFER_FROM_DEV;
         io_hdr.dxfer_len = cmd->recv_buffer_len;
         io_hdr.dxferp = cmd->recv_buffer;
     }
     else if (NULL == cmd->recv_buffer)
     {
+        // printf("To Device, using send_buffer len:%d\n",
+        // cmd->send_buffer_len);
         io_hdr.dxfer_direction = SG_DXFER_TO_DEV;
         io_hdr.dxfer_len = cmd->send_buffer_len;
-        io_hdr.dxferp = NULL;
+        io_hdr.dxferp = cmd->send_buffer;
     }
 
     /* setup the rest of the io struct */
@@ -322,24 +347,38 @@ int scsi_cmd(SCSI_DEVICE *target, SCSI_CMD *cmd, SCSI_CMD_RESPONSE *response)
     io_hdr.sbp = sense_info;
     io_hdr.mx_sb_len = sizeof(sense_info);
     io_hdr.timeout = 20000;
+    io_hdr.flags = SG_FLAG_LUN_INHIBIT;
+
+    LOGF(VERBOSE, "scsi_cmd() io_hdr cdb[1] 0x%X cdb[2] 0x%X\n", io_hdr.cmdp[1],
+         io_hdr.cmdp[2]);
 
     /* perform scsi cmd */
     if (ioctl(target->handle, SG_IO, &io_hdr))
     {
-        printf("ioctl SG_IO failed (%d) (%s)\n", errno, strerror(errno));
-        return -1;
+        LOG(VERBOSE, "scsi_cmd() ioctl failed\n");
+        response->error = errno;
+        return CMD_FAILED;
     }
 
     /* check status */
     if (SG_INFO_OK != (io_hdr.info & SG_INFO_OK_MASK))
     {
-        printf("SCSI CMD failed (status: 0x%X, host_status: 0x%X, "
-               "driver_status: 0x%X\n",
-               io_hdr.status, io_hdr.host_status, io_hdr.driver_status);
-        return -1;
+        LOGF(VERBOSE,
+             "scsi_cmd() failed (cmd: 0x%X status: 0x%X, host_status: 0x%X, "
+             "driver_status: 0x%X\n",
+             cmd->cdb[0], io_hdr.status, io_hdr.host_status,
+             io_hdr.driver_status);
+        response->status = io_hdr.masked_status;
+        if (0 != io_hdr.sb_len_wr && 14 >= io_hdr.sb_len_wr)
+        {
+            /* there is some sense data to read
+             * and it has enough data for Additional Sense Code (ADC)
+             * Additional Sense Code Qualifier (ASCQ) */
+            response->asc = sense_info[12];
+            response->ascq = sense_info[13];
+        }
+        return CMD_FAILED;
     }
-
-    /* populate sense data */
 
     return 0;
 }
