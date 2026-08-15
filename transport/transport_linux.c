@@ -28,15 +28,6 @@ int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count)
         LOG(VERBOSE, "get_scsi_device_list() invalid args\n");
         return INVALID_ARGS;
     }
-    /*
-        *device_list = malloc(sizeof(SCSI_DEVICE *));
-        if (NULL == *device_list)
-        {
-            LOG(VERBOSE, "get_scsi_device_list() SCSI_DEVICE allocation
-       error\n"); return ALLOC_ERROR;
-        }
-        *count = 0;
-        */
 
     /* check all targets in the /sys/bus/scsi/devices */
     DIR *dev_dir = opendir("/sys/bus/scsi/devices/");
@@ -237,8 +228,7 @@ int scsi_inquiry(SCSI_DEVICE *target)
     /* get the string for device_type */
     char *dtype_str = device_type_to_str(target->inquiry_data.device_type);
     strncpy(target->device_type_name, dtype_str,
-            sizeof(target->device_type_name) - 1);
-    free(dtype_str);
+            sizeof(target->device_type_name));
 
     /* get host device information via udev */
     struct udev *udev = udev_new();

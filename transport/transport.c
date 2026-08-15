@@ -4,25 +4,30 @@
 #define DTYPE_MAX_LEN 16
 char *device_type_to_str(int device_type)
 {
-    char *str = NULL;
-
-    str = malloc(DTYPE_MAX_LEN);
-    if (NULL == str)
-    {
-        return NULL;
-    }
-    memset(str, 0, DTYPE_MAX_LEN);
-
     switch (device_type)
     {
         case 0:
-            strcpy(str, "Disk");
-            break;
-        default:
-            strcpy(str, "Unknown");
-    }
+            return "Disk";
+        case 1:
+            return "Tape";
+        case 2:
+            return "Printer";
+        case 3:
+            return "Processor";
+        case 4:
+            return "WORM";
+        case 5:
+            return "CD-ROM";
+        case 6:
+            return "Scanner";
+        case 7:
+            return "Optical";
+        case 8:
+            return "Changer";
 
-    return str;
+        default:
+            return "Unknown";
+    }
 }
 
 /* get cdb size */
@@ -56,10 +61,10 @@ int extract_inquiry_data(unsigned char *raw, SCSI_DEVICE *target)
     }
 
     /* peripheral device type */
-    target->inquiry_data.device_type = raw[0] >> 3;
+    target->inquiry_data.device_type = raw[0] & 0x1F;
 
     /* removeable */
-    target->inquiry_data.device_type = (raw[1] & 0x1);
+    target->inquiry_data.removeable = raw[1] >> 7;
 
     /* ANSI version */
     target->inquiry_data.ansi_version = raw[2] >> 5;
