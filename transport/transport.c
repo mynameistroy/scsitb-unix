@@ -49,8 +49,6 @@ int get_cdb_len(unsigned char *cdb)
     }
 }
 
-#ifdef LITTLE_ENDIAN
-
 /* extract byte values to populate SCSI_DEVICE inquiry data */
 int extract_inquiry_data(unsigned char *raw, SCSI_DEVICE *target)
 {
@@ -98,8 +96,3 @@ int extract_inquiry_data(unsigned char *raw, SCSI_DEVICE *target)
 
     return 0;
 }
-
-#else
-/* big endian */
-
-#endif

@@ -2,7 +2,6 @@
 #define __SCSI_DEVICE_H__
 
 #include <memory.h>
-#include <scsi/scsi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -50,6 +49,7 @@ typedef struct {
 typedef struct {
     int handle;
     char name[32];
+    char device_path[64];
     char addr[16];
     char device_type_name[16];
     char host_device_name[32];

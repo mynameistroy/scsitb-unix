@@ -236,7 +236,7 @@ void help(char *exe_name)
            "optional\n");
     printf("put <local> <remote>    Put a file on the device. <remote> "
            "is optional\n");
-    printf("setimg <index>             Set the image of a optical drive via "
+    printf("setimg <index>          Set the image of a optical drive via "
            "index\n");
     printf("debug                   Display current debug logging "
            "setting\n");
@@ -308,6 +308,7 @@ int cmd_list_files(SCSI_DEVICE *device, int argc, char **argv)
         printf("Error: Getting file list from device\n");
         return CMD_FAILED;
     }
+    printf("dir->count %d\n", dir->count);
 
     TOOLBOX_FILE *file = dir->entries;
     for (int i = 0; i < dir->count; i++)

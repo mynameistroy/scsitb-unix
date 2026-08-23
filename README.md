@@ -1,7 +1,10 @@
 # scsitb-unix
 A BlueSCSI toolbox utility targeting various UNIX platforms
 
-Currently only builds for Linux, but more platforms are coming...
+|  OS | Notes |
+|-----|---------|
+| Linux | requires SG_IO |
+| Solaris 2.6/SPARC | gcc works, haven't tried SunWorkshop yet |
 
 Special thanks to [Niels Martin Hansen](https://github.com/nielsmh) for his [scsitb for DOS](https://github.com/nielsmh/escsitoolbox). Of which I shamelessly cribbed the look and feel, in order to give some sense of familiarity to the tools across the various platforms.
 

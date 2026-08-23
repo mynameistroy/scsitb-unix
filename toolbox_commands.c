@@ -114,7 +114,7 @@ int toolbox_cmd_count(SCSI_DEVICE *target, unsigned char toolbox_cmd)
     memset(&cmd, 0, sizeof(SCSI_CMD));
     cmd.cdb[0] = toolbox_cmd;
     cmd.cdb_len = 10;
-    cmd.recv_buffer = &recv_buffer[0];
+    cmd.recv_buffer = recv_buffer;
     cmd.recv_buffer_len = 1;
 
     if (NULL == target)

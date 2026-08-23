@@ -25,7 +25,7 @@ PLATFORM := $(filter $(UNAME_S),Linux AIX Solaris HP-UX IRIX BSD)
 PLATFORM_UNKNOWN := $(filter $(UNAME_S),*)
 
 # Debug variable for verbose output (uncomment to debug)
-# DEBUG_MAKE := 1
+#DEBUG_MAKE := 1
 
 #------------------------------------------------------------------------------
 # 2. CONFIGURABLE VARIABLES (Easy to override)
@@ -83,10 +83,10 @@ ifeq ($(findstring AIX,$(UNAME_S)),AIX)
 		TRANSPORT = transport_aix
 endif
 
-ifeq ($(findstring Solaris,$(UNAME_S)),Solaris)
-    CFLAGS_PLATFORM += -mt -xstrconst=1 -DBIG_ENDIAN
-    LDFLAGS_PLATFORM += -mt
-		TRANSPORT = transport_solaris
+ifeq ($(findstring SunOS,$(UNAME_S)),SunOS)
+    CFLAGS_PLATFORM += -DBIG_ENDIAN -D__EXTENSIONS__
+    LDFLAGS_PLATFORM +=
+		TRANSPORT = transport_sunos
 endif
 
 ifeq ($(findstring HP-UX,$(UNAME_S)),HP-UX)
@@ -109,7 +109,7 @@ endif
 # 4. BUILD TYPE SELECTION
 #------------------------------------------------------------------------------
 # Default: RELEASE
-BUILD_TYPE ?= release
+BUILD_TYPE ?= debug
 
 ifeq ($(BUILD_TYPE),debug)
     CFLAGS := $(CFLAGS_BASE) $(CFLAGS_DEBUG) $(CFLAGS_PLATFORM) $(INCLUDES)
