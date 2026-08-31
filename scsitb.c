@@ -308,7 +308,6 @@ int cmd_list_files(SCSI_DEVICE *device, int argc, char **argv)
         printf("Error: Getting file list from device\n");
         return CMD_FAILED;
     }
-    printf("dir->count %d\n", dir->count);
 
     TOOLBOX_FILE *file = dir->entries;
     for (int i = 0; i < dir->count; i++)
@@ -318,6 +317,7 @@ int cmd_list_files(SCSI_DEVICE *device, int argc, char **argv)
 
         file++;
     }
+    printf("%d files\n", dir->count);
 
     toolbox_dir_free(dir);
 
@@ -350,6 +350,7 @@ int cmd_list_cds(SCSI_DEVICE *device, int argc, char **argv)
 
         file++;
     }
+    printf("%d files\n", dir->count);
 
     toolbox_dir_free(dir);
 

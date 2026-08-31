@@ -90,7 +90,7 @@ int toolbox_cmd_set_next_cd(SCSI_DEVICE *target, unsigned char image_index)
 
     if (NULL == target)
     {
-        printf("toolbox_cmd_set_next_cd() Invalid SCSI target\n");
+        LOG("toolbox_cmd_set_next_cd() Invalid SCSI target\n");
         return INVALID_ARGS;
     }
 
@@ -119,7 +119,7 @@ int toolbox_cmd_count(SCSI_DEVICE *target, unsigned char toolbox_cmd)
 
     if (NULL == target)
     {
-        printf("toolbox_cmd_count() Invalid SCSI target\n");
+        LOG("toolbox_cmd_count() Invalid SCSI target\n");
         return INVALID_ARGS;
     }
 
@@ -324,7 +324,6 @@ int toolbox_cmd_get_file(SCSI_DEVICE *target, char *src, char *dst)
             continue;
         }
         f = &dir->entries[i];
-        printf("src %s name %s\n", src, f->name);
         if (0 == strncmp(src, f->name, strlen(f->name)))
         {
             break;
