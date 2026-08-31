@@ -102,7 +102,7 @@ int main(int argc, char **argv)
     if (NULL != argv[2])
     {
         /* verify the specific device asked for exists */
-        for (unsigned int i = i; i < dev_count; i++)
+        for (unsigned int i = 0; i < dev_count; i++)
         {
             char *dev_name = device_list[i]->name;
             if (strstr(dev_name, argv[1]))
