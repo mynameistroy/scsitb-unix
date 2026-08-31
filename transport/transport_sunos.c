@@ -80,7 +80,6 @@ int get_scsi_device_list(SCSI_DEVICE ***device_list, unsigned int *count)
             dev->api = buffer[0];
             dev->capabilities = buffer[1];
             dev->s2s_type = s2s_list[dev->id];
-
             (*count)++;
             SCSI_DEVICE **new_device_list =
                 realloc(*device_list, sizeof(SCSI_DEVICE *) * (*count));
@@ -195,11 +194,11 @@ SCSI_DEVICE *scsi_open(char *device_name)
     }
 
     // get the bus, id, lun
-    buf[0] = device->name[1];
+    buf[0] = basename(device_name)[1];
     device->host_id = atoi(buf);
-    buf[0] = device->name[3];
+    buf[0] = basename(device_name)[3];
     device->id = atoi(buf);
-    buf[0] = device->name[5];
+    buf[0] = basename(device_name)[5];
     device->lun = atoi(buf);
 
     return device;
