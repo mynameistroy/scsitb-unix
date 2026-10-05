@@ -90,7 +90,7 @@ int toolbox_cmd_set_next_cd(SCSI_DEVICE *target, unsigned char image_index)
 
     if (NULL == target)
     {
-        LOG("toolbox_cmd_set_next_cd() Invalid SCSI target\n");
+        LOG(VERBOSE, "toolbox_cmd_set_next_cd() Invalid SCSI target\n");
         return INVALID_ARGS;
     }
 
@@ -119,7 +119,7 @@ int toolbox_cmd_count(SCSI_DEVICE *target, unsigned char toolbox_cmd)
 
     if (NULL == target)
     {
-        LOG("toolbox_cmd_count() Invalid SCSI target\n");
+        LOG(VERBOSE, "toolbox_cmd_count() Invalid SCSI target\n");
         return INVALID_ARGS;
     }
 
