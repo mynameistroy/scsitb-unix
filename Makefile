@@ -1,6 +1,6 @@
 # scsitb build
 # GNU make 3.75+ compatible: no ?=, no else-ifeq, no $(error), no patsubst,
-# no .DEFAULT_GOAL. Platform settings live in config/Makefile.<OS>.
+# no .DEFAULT_GOAL. Platform settings live in config/<OS>.mk.
 
 UNAME_S := $(shell uname -s 2>/dev/null)
 
@@ -8,8 +8,8 @@ ifeq ($(PLATFORM),)
 PLATFORM := $(UNAME_S)
 endif
 
-ifneq ($(wildcard config/Makefile.$(PLATFORM)),)
-include config/Makefile.$(PLATFORM)
+ifneq ($(wildcard config/$(PLATFORM).mk),)
+include config/$(PLATFORM).mk
 endif
 
 EXE := scsitb
@@ -24,7 +24,7 @@ endif
 
 ALL_OBJS := $(OBJS) $(TRANSPORT_OBJS)
 HEADERS := $(wildcard include/*.h)
-AVAILABLE := $(subst config/Makefile.,,$(wildcard config/Makefile.*))
+AVAILABLE := $(basename $(notdir $(wildcard config/*.mk)))
 
 ifeq ($(BUILD_TYPE),)
 BUILD_TYPE := debug
@@ -39,8 +39,8 @@ endif
 CFLAGS += -Wall -Iinclude
 
 ifeq ($(TRANSPORT),)
-ifneq ($(wildcard config/Makefile.$(PLATFORM)),)
-ERRMSG := config/Makefile.$(PLATFORM) does not set TRANSPORT
+ifneq ($(wildcard config/$(PLATFORM).mk),)
+ERRMSG := config/$(PLATFORM).mk does not set TRANSPORT
 else
 ERRMSG := no configuration for platform '$(PLATFORM)'
 endif
