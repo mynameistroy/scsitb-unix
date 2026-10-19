@@ -17,4 +17,13 @@
 extern int log_level;
 void scsitb_log(int line, char *file, int LEVEL, char *fmt, ...);
 
+
+#ifdef __NeXT__
+#define vsnprintf(buffer, size, ...) \
+    vsprintf(buffer, __VA_ARGS__)  
+
+/* NeXT doesn't have basename, so roll our own */
+char *basename(const char *name);
+#endif
+
 #endif

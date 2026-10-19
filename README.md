@@ -6,6 +6,7 @@ A BlueSCSI toolbox utility targeting various UNIX platforms
 | Linux | requires SG_IO |
 | Solaris 2.6/SPARC | gcc works, haven't tried SunWorkshop yet |
 | Solaris 10/SPARC | same as above |
+| NeXT OS 3.3 | uses gcc 3.4.6 via NS33HeadersFix-1.2, cctools-435.4~ns2, gcc-3.4.6~ns1 |
 
 Special thanks to [Niels Martin Hansen](https://github.com/nielsmh) for his [scsitb for DOS](https://github.com/nielsmh/escsitoolbox). Of which I shamelessly cribbed the look and feel, in order to give some sense of familiarity to the tools across the various platforms.
 

@@ -1,8 +1,11 @@
 #include <iso646.h>
-#include <libgen.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <strings.h>
+
+#ifndef __NeXT__
+#include <libgen.h>
+#endif
 
 #include "include/scsi_device.h"
 #include "include/scsitb.h"
@@ -227,11 +230,11 @@ void help(char *exe_name)
     printf("Commands:\n");
     printf("info                    Provides information for all found "
            "devices\n");
-    printf("info <device>           Provides information about a specific "
+    printf("<device> info           Provides information about a specific "
            "device\n");
 
     printf("lsdir                   List files in shared directory\n");
-    printf("lscds                   List images available to <device>\n");
+    printf("lsimg                   List images available to <device>\n");
     printf("get <remote> <local>    Get a file from device. <local> is "
            "optional\n");
     printf("put <local> <remote>    Put a file on the device. <remote> "
@@ -461,3 +464,36 @@ int cmd_put_file(SCSI_DEVICE *device, int argc, char **argv)
 
     return NO_ERROR;
 }
+
+#ifdef __NeXT__
+char __basename[32];
+char *basename(const char *basename)
+{
+    // NeXT OS doesn't have basename() natively so we'll fake it with popen() to the shell
+    // It uses a global and isn't thread-safe but doesn't matter
+    FILE *fp = NULL;
+    char buf[64] = {0};
+    char *retval = NULL;
+
+    if (strlen(basename) > 64)
+    {
+        return NULL;
+    }
+    
+    sprintf(buf, "basename %s", basename);
+    fp = popen(buf, "r");
+    if (NULL == fp)
+    {
+        return NULL;
+    }
+ 
+    fgets(buf, sizeof(buf), fp);
+    memset(__basename, 0, sizeof(__basename));
+    retval = __basename;
+    strncpy(retval, buf, strlen(buf) - 1);
+
+    pclose(fp);
+
+    return retval; 
+}
+#endif
