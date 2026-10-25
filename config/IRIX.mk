@@ -1,5 +1,5 @@
-CC := cc
-CFLAGS := -n32 -mt -DBIG_ENDIAN
-LDFLAGS := -n32 -mt
-LIBS :=
+CC := gcc
+CFLAGS := -D__IRIX__ -DBIG_ENDIAN -fPIC -fPIE
+LDFLAGS :=
+LIBS := -lgen
 TRANSPORT := transport_irix
